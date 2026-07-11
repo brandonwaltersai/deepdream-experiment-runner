@@ -1,5 +1,7 @@
 # DeepDream Experiment Runner
 
+![tests](https://github.com/brandonwaltersai/deepdream-experiment-runner/actions/workflows/tests.yml/badge.svg)
+
 A batch DeepDream pipeline on a pretrained InceptionV3 (ImageNet) —
 multi-octave, tiled gradients for memory safety, and a runner that never
 lets one failed configuration kill the whole batch.
