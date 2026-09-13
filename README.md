@@ -2,48 +2,43 @@
 
 ![tests](https://github.com/brandonwaltersai/deepdream-experiment-runner/actions/workflows/tests.yml/badge.svg)
 
-A batch DeepDream pipeline on a pretrained InceptionV3 (ImageNet) —
-multi-octave, tiled gradients for memory safety, and a runner that never
-lets one failed configuration kill the whole batch.
+A resilient batch DeepDream pipeline built on pretrained InceptionV3: config-driven experiments, multi-octave optimization, tiled gradients for bounded memory use, failure isolation, resume behavior, and reproducible tests.
 
-## What DeepDream actually is (beyond "trippy art")
+## Why this project exists
 
-Gradient ascent on a trained CNN's *internal* activations instead of its
-output layer — literally "what pattern would make this layer fire
-harder." It's a real, if unusual, model-interpretability tool: which
-patterns different layers respond to. Early layers amplify edges and
-textures; deeper layers amplify object-like motifs (the model was trained
-on ImageNet, so you'll see dog/eye-like shapes emerge from deep layers on
-almost any input — that's a real signal about what the network learned,
-not an artistic choice).
+DeepDream is gradient ascent on a trained CNN's internal activations. Instead of optimizing model weights, it optimizes the input image to increase selected layer responses. That makes it useful as a compact experiment in model introspection, gradient-based image generation, and controlled parameter testing.
 
-## What makes this "production-grade" rather than a tutorial notebook
+The repository grew out of a 12-run graduate experiment across three image types and four controlled parameter conditions. The original experiment measured output changes with Mean Absolute Difference and Sobel-based edge density in addition to visual inspection. See [`docs/original-experiment-summary.md`](docs/original-experiment-summary.md).
 
-- **Config-driven experiments**, not "edit random cells" — each run is an
-  `Experiment` dataclass (layers, octaves, step size, tile size), validated
-  before it runs
-- **Tiled gradients**: large images are processed in tiles so memory usage
-  stays bounded regardless of input size, with random jitter between tiles
-  to avoid visible seams
-- **Batch runner that always finishes**: each (image, experiment) pair is
-  wrapped in try/except — one out-of-memory or bad-config failure is
-  logged and the batch continues, rather than dying partway through
-- **Resume mode**: skips outputs that already exist on disk, so a killed
-  batch run can restart without redoing completed work
+## Engineering features
 
-## Verified, not just written
+- **Config-driven experiments** — each run is represented as a validated `Experiment` configuration rather than an edited notebook cell.
+- **Tiled gradients** — larger images are processed in tiles to bound memory use, with randomized shifts to reduce visible seams.
+- **Failure isolation** — one bad configuration or runtime failure is logged without terminating the remaining batch.
+- **Resume mode** — existing outputs are skipped so interrupted batches can continue without repeating completed runs.
+- **Real-model tests** — the test suite includes checks that load genuine InceptionV3 weights and execute real DeepDream passes.
+- **Documented provenance** — the controlled academic experiment is separated from the refactored reusable runner so results are not overstated.
 
-This was actually executed in this environment: real InceptionV3 weights
-downloaded and loaded, a real multi-octave DeepDream pass run, and a real
-output image produced showing the characteristic InceptionV3 activation
-patterns. Full run log and the actual output image:
-[`docs/results.md`](docs/results.md).
+## What the original experiment found
+
+Across the controlled runs:
+
+- early-layer targets generally amplified edges and textures;
+- deeper layers produced more object-like composite patterns;
+- the higher-intensity multi-octave condition produced the largest pixel transformation across all three source-image categories;
+- the same parameter set behaved differently on object-centric, architectural, and natural-texture inputs.
+
+Full metrics and experiment settings are documented in [`docs/original-experiment-summary.md`](docs/original-experiment-summary.md).
+
+## Verified execution
+
+The refactored runner has also been executed independently with real InceptionV3 weights and a real multi-octave DeepDream pass. See [`docs/results.md`](docs/results.md) for the run log and output evidence.
 
 ## Running it
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests/ -v              # fast tests + 2 real-model tests (~10s total)
+python -m pytest tests/ -v
 ```
 
 ```python
@@ -54,28 +49,37 @@ from PIL import Image
 
 base_model = load_base_model()
 img = np.array(Image.open("your_image.png").convert("RGB"))
-records = run_batch({"my_image": img}, DEFAULT_EXPERIMENTS, base_model, out_dir="./outputs")
+records = run_batch(
+    {"my_image": img},
+    DEFAULT_EXPERIMENTS,
+    base_model,
+    out_dir="./outputs",
+)
 ```
 
 ## Project structure
 
-```
+```text
 src/
-  deepdream.py     the DeepDream engine: simple + multi-octave/tiled variants
-  experiments.py   Experiment config, validation, and the always-finish batch runner
+  deepdream.py          DeepDream engine: simple and multi-octave/tiled variants
+  experiments.py        experiment config, validation, batch runner, resume logic
 tests/
-  test_experiments.py   7 tests: 5 fast validation tests + 2 that load real
-                         InceptionV3 weights and run genuine DeepDream passes
+  test_experiments.py   validation tests plus real-model execution tests
 docs/
-  results.md            the actual verified run log + output image
+  results.md                    verified refactored-run evidence
+  original-experiment-summary.md 12-run controlled experiment and metrics
 data/
-  demo_input.png         synthetic test input used for the verified run
+  demo_input.png         synthetic input used for verification
 ```
 
 ## Stack
 
-Python · TensorFlow/Keras · InceptionV3 (ImageNet pretrained)
+Python · TensorFlow/Keras · InceptionV3 · NumPy · Pillow
+
+## Scope
+
+This project is not presented as state-of-the-art generative vision research. Its purpose is to demonstrate controlled experimentation, CNN feature behavior, gradient-based optimization, reproducibility, and reliable execution patterns.
 
 ## Author
 
-Brandon Walters — [LinkedIn](https://linkedin.com/in/brandon-walters-172b29208)
+Brandon Walters — [LinkedIn](https://www.linkedin.com/in/bw172b29208/)
