@@ -19,6 +19,8 @@ Four conditions were applied to each image for 12 total experiment runs:
 | early_layers | `mixed1`, `mixed2` | `[-2,-1,0,1,2]` | 100 | 0.01 | 512 |
 | octaves_plus_intensity | `mixed3`, `mixed5` | `[-1,0,1]` | 150 | 0.02 | 512 |
 
+The surviving report did not record the original `octave_scale` value. Because generated resolutions depend on `octave_scale ** octave`, the table above documents the settings supported by the report but is not sufficient for bit-for-bit reproduction of the original 12 runs. The refactored runner has its own explicit configuration and independently verified execution.
+
 The run environment recorded TensorFlow/Python metadata and GPU availability. The original experiment executed on CPU.
 
 ## Evaluation
